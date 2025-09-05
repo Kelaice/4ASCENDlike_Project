@@ -1,5 +1,6 @@
 import pygame
 from board import *
+from background import*
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -10,8 +11,8 @@ while running:
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
             running = False
-    
-    screen.fill("white")
+
+    drawBackGround(screen)
 
     drawUI(screen)
     turn = checkMouse(screen)

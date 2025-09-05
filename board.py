@@ -17,7 +17,7 @@ PieceRidus = 15
 All_Piece = []
 Piece_Color = 0
 
-LeftUP_Point = (461,211)
+LeftUP_Point = (461,210)
 RightDown_Point = (821,571)
 
 PlayerHead_Pos = (150,70)
@@ -78,7 +78,7 @@ lock = 0
 def setPiece(turn):
     global Piece_Color
     global lock
-    
+
     pressed = pygame.mouse.get_pressed()
     piecePos = findPos()
 
@@ -87,7 +87,7 @@ def setPiece(turn):
             if Piece_Color==0:
                 All_Piece.append([[piecePos[0],piecePos[1]],"black"])
             else:
-                All_Piece.append([[piecePos[0],piecePos[1]],0xdbdbd9])
+                All_Piece.append([[piecePos[0],piecePos[1]],"white"])
             Piece_Color = (Piece_Color+1)%2
     lock = pressed[0]
 
