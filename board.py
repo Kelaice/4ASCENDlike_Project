@@ -3,9 +3,9 @@ import pygame
 Boardsize = 9
 
 XtoXstart = 220
-YtoXstart = 100
+YtoXstart = 150
 XtoYstart = 180
-YtoYstart = 130
+YtoYstart = 180
 
 Rowlenth = 440
 Collenth = 420
@@ -17,8 +17,8 @@ PieceRidus = 15
 All_Piece = []
 Piece_Color = 0
 
-LeftUP_Point = (461,261)
-RightDown_Point = (821,621)
+LeftUP_Point = (461,211)
+RightDown_Point = (821,571)
 
 PlayerHead_Pos = (150,70)
 EnemyHead_Pos = (1100,70)
@@ -87,7 +87,7 @@ def setPiece(turn):
             if Piece_Color==0:
                 All_Piece.append([[piecePos[0],piecePos[1]],"black"])
             else:
-                All_Piece.append([[piecePos[0],piecePos[1]],"white"])
+                All_Piece.append([[piecePos[0],piecePos[1]],0xdbdbd9])
             Piece_Color = (Piece_Color+1)%2
     lock = pressed[0]
 
