@@ -1,6 +1,6 @@
 import pygame
-from board import *
-from background import*
+import board
+import background
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -9,15 +9,15 @@ running = True
 
 while running:
     for event in pygame.event.get():
-        if event.type==pygame.QUIT:
+        if event.type == pygame.QUIT:
             running = False
 
-    drawBackGround(screen)
+    background.drawBackGround(screen)
 
-    drawUI(screen)
-    turn = checkMouse(screen)
-    setPiece(turn)
-    drawPiece(screen)
+    board.drawUI(screen)
+    turn = board.checkMouse(screen)
+    board.setPiece(turn)
+    board.drawPiece(screen)
 
     pygame.display.flip()
 
