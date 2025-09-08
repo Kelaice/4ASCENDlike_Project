@@ -17,7 +17,7 @@ titleBackground_image = pygame.image.load('resource\\titleBackground.png')
 state=TITLE
 TITLE_FLAG=True;WEL_FLAG=True
 
-
+board = Board()
 
 
 while running:
@@ -36,10 +36,10 @@ while running:
         case 1:
             screen.fill(0xffffff)
             screen.blit(background_image, (0, 0))
-            drawUI(screen)
-            turn = checkMouse(screen)
-            setPiece(turn)
-            drawPiece(screen)
+            board.drawUI(screen)
+            turn = board.checkMouse(screen)
+            board.setPiece(turn)
+            board.drawPiece(screen)
 
             pygame.display.flip()
     clock.tick(60)
