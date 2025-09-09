@@ -64,3 +64,5 @@ def mouseJudge(screen,x,y):
 def gameJudge(x,y):
     if 505 <= x <= 775 and 150 <= y <= 264:
         return 2
+    else:
+        return 1

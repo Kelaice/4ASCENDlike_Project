@@ -3,6 +3,9 @@ import pygame
 
 white_Chess_Image = pygame.image.load("resource\\white_Chess.png")
 black_Chess_Image = pygame.image.load("resource\\black_Chess.png")
+white_Chess_Plant_Image = pygame.image.load("resource\\white_Chess_Plant.png")
+black_Chess_Plant_Image = pygame.image.load("resource\\black_Chess_Plant.png")
+
 
 class Board:
     def __init__(self):
