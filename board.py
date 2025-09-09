@@ -5,7 +5,7 @@ white_Chess_Image = pygame.image.load("resource\\white_Chess.png")
 black_Chess_Image = pygame.image.load("resource\\black_Chess.png")
 white_Chess_Plant_Image = pygame.image.load("resource\\white_Chess_Plant.png")
 black_Chess_Plant_Image = pygame.image.load("resource\\black_Chess_Plant.png")
-
+HP_Image = pygame.image.load("resource\\HP_Image.png")
 
 class Board:
     def __init__(self):
@@ -66,42 +66,24 @@ class Board:
         screen.blit(player_image,self.PlayerHead_Pos)
         screen.blit(enemy_image,self.EnemyHead_Pos)
         # 玩家1血量条（头像下方）
-        bar_width = 100
-        bar_height = 20
         avatar_size = 50
         player1_x, player1_y = self.PlayerHead_Pos
-        bar_y = player1_y + avatar_size + 10
-        bg_rect = pygame.Rect(player1_x, bar_y, bar_width, bar_height)
-        pygame.draw.rect(screen, (192,192,192), bg_rect)
-        pygame.draw.rect(screen, (0,0,0), bg_rect, 2)
-        if hp1 > 0:
-            fill_width = int((hp1 / initial_hp1) * bar_width)
-            fill_rect = pygame.Rect(player1_x, bar_y, fill_width, bar_height)
-            color = (0,255,0) if hp1 > 2 else (255,0,0)
-            pygame.draw.rect(screen, color, fill_rect)
-        for i in range(1, initial_hp1):
-            grid_x = player1_x + int((i / initial_hp1) * bar_width)
-            pygame.draw.line(screen, (0,0,0), (grid_x, bar_y), (grid_x, bar_y + bar_height), 1)
-        f = pygame.font.Font(None, 18)
+        bar_x = player1_x + 15 ; bar_y = player1_y + avatar_size + 20
+        screen.blit(HP_Image,(bar_x,bar_y))
+
+        f = pygame.font.Font("resource\\ProggyTinySZ-4.ttf", 40)
+
         hp_text = f.render(f"{hp1}/{initial_hp1}", True, (0,0,0))
-        text_rect = hp_text.get_rect(center=(player1_x + bar_width // 2, bar_y + bar_height + 15))
+        text_rect = hp_text.get_rect(center=(player1_x + 35, bar_y + 60))
         screen.blit(hp_text, text_rect)
         # 玩家2血量条（头像下方）
         player2_x, player2_y = self.EnemyHead_Pos
-        bar_y2 = player2_y + avatar_size + 10
-        bg_rect2 = pygame.Rect(player2_x, bar_y2, bar_width, bar_height)
-        pygame.draw.rect(screen, (192,192,192), bg_rect2)
-        pygame.draw.rect(screen, (0,0,0), bg_rect2, 2)
-        if hp2 > 0:
-            fill_width2 = int((hp2 / initial_hp2) * bar_width)
-            fill_rect2 = pygame.Rect(player2_x, bar_y2, fill_width2, bar_height)
-            color2 = (0,255,0) if hp2 > 2 else (255,0,0)
-            pygame.draw.rect(screen, color2, fill_rect2)
-        for i in range(1, initial_hp2):
-            grid_x2 = player2_x + int((i / initial_hp2) * bar_width)
-            pygame.draw.line(screen, (0,0,0), (grid_x2, bar_y2), (grid_x2, bar_y2 + bar_height), 1)
+        bar_x2 = player2_x + 15 ; bar_y2 = player2_y + avatar_size + 20
+        screen.blit(HP_Image,(bar_x2,bar_y2))
+
+
         hp_text2 = f.render(f"{hp2}/{initial_hp2}", True, (0,0,0))
-        text_rect2 = hp_text2.get_rect(center=(player2_x + bar_width // 2, bar_y2 + bar_height + 15))
+        text_rect2 = hp_text2.get_rect(center=(player2_x + 35, bar_y2 + 60))
         screen.blit(hp_text2, text_rect2)
         # 图片资源留空，未来可替换血条为图片
 
@@ -119,12 +101,14 @@ class Board:
                     return pygame.Vector2(i,j)
         return pygame.Vector2(0,0)
 
-    def checkMouse(self,screen):
+    def checkMouse(self,screen,player):
         '''检查鼠标位置是否合法'''
         piecePos = self.findPos()
         if piecePos[0]!=0 and self.checkPiece(piecePos):
-            pygame.draw.rect(screen,self.Line_color,[piecePos[0]-self.CheckRidus,piecePos[1]-self.CheckRidus,
-                                            self.CheckRidus*2,self.CheckRidus*2],1,1)
+            if player == 1:
+                pygame.draw.circle(screen,0xE4080A,[piecePos[0],piecePos[1]],15,1)
+            else:
+                pygame.draw.circle(screen,0x5DE2E7,[piecePos[0],piecePos[1]],15,1)
             return True
         return False
 

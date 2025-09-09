@@ -53,7 +53,6 @@ while running:
             pygame.display.flip()
             pressed = pygame.mouse.get_pressed()
             if pressed[0]:
-            # if event.type == pygame.MOUSEBUTTONDOWN:
                 x1,y1=event.pos
                 state = gameJudge(x1,y1)
                 lock=1
@@ -68,7 +67,7 @@ while running:
             pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = game_state
             board.drawUI(screen, hp1, hp2, game.hp1, game.hp2)
 
-            valid = board.checkMouse(screen)
+            valid = board.checkMouse(screen,player)
             pressed = pygame.mouse.get_pressed()
             # 鼠标点击落子
             if valid and pressed[0] and not lock:

@@ -14,6 +14,10 @@ class FourAscendGame:
         self.hp2 = hp2
         self.plant_timer = 0
         self.grid_count = board_size * board_size
+        
+        self.DP1 = 0;self.connect1 = False
+        self.DP2 = 0;self.connect2 = False
+
 
     def getInitBoard(self):
         """
@@ -114,6 +118,11 @@ class FourAscendGame:
                 player,
                 set_ascend_value=True,
             )
+            # if player == 1:
+            #     self.DP1=tempDP
+            # else:
+            #     self.DP2=tempDP
+
 
         self.plant_timer += 1
         if self.plant_timer > 6:
