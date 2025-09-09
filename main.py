@@ -51,9 +51,14 @@ while running:
                 x1,y1=event.pos
             mouseJudge(screen,x1,y1)
             pygame.display.flip()
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            pressed = pygame.mouse.get_pressed()
+            if pressed[0]:
+            # if event.type == pygame.MOUSEBUTTONDOWN:
                 x1,y1=event.pos
                 state = gameJudge(x1,y1)
+                lock=1
+            if not pressed[0]:
+                lock=0
 
         case 2:
             # 游戏主界面

@@ -32,7 +32,7 @@ class Board:
         self.Magic_plant_Color = 0xFFECA1
 
         self.LeftUP_Point = (461 -self.Board_x_move, 210 -self.Board_y_move)
-        self.RightDown_Point = (821 -self.Board_x_move, 571 -self.Board_y_move)
+        self.RightDown_Point = (871 -self.Board_x_move, 621 -self.Board_y_move)
 
         self.PlayerHead_Pos = (150,70)
         self.EnemyHead_Pos = (1100,70)
