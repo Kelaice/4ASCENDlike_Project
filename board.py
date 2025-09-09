@@ -29,7 +29,7 @@ class Board:
         self.Piece_Color = 0
 
         self.Magic_plants = []
-        self.Magic_plant_Color = "green"
+        self.Magic_plant_Color = 0xFFECA1
 
         self.LeftUP_Point = (461 -self.Board_x_move, 210 -self.Board_y_move)
         self.RightDown_Point = (821 -self.Board_x_move, 571 -self.Board_y_move)
@@ -163,12 +163,20 @@ class Board:
         for row in range(self.Boardsize):
             for col in range(self.Boardsize):
                 if pieces[row][col] == 1:
-                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
-                                           self.LeftUP_Point[1] + row * self.Distance - 20], black_Chess_Image])
+                    if  magic_plants[row][col] == 1:
+                        self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                            self.LeftUP_Point[1] + row * self.Distance - 20], black_Chess_Plant_Image])
+                    else:
+                        self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                            self.LeftUP_Point[1] + row * self.Distance - 20], black_Chess_Image])
                 elif pieces[row][col] == -1:
-                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
-                                           self.LeftUP_Point[1] + row * self.Distance - 20], white_Chess_Image])
+                    if  magic_plants[row][col] == 1:
+                        self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                            self.LeftUP_Point[1] + row * self.Distance - 20], white_Chess_Plant_Image])
+                    else:
+                        self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                            self.LeftUP_Point[1] + row * self.Distance - 20], white_Chess_Image])
 
-                if magic_plants[row][col] == 1:
+                if magic_plants[row][col] == 1 and pieces[row][col] == 0:
                     self.Magic_plants.append([self.LeftUP_Point[0] + col * self.Distance,
                                               self.LeftUP_Point[1] + row * self.Distance])
