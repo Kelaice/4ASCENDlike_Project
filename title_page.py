@@ -44,3 +44,4 @@ def drawWelcome(screen,titleBackground_image,WEL_FLAG):
     pygame.display.update(textRect)
     pygame.time.wait(1000)
     return not WEL_FLAG
+

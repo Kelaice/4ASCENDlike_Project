@@ -1,18 +1,23 @@
 #负责棋盘显示
 import pygame
 
+white_Chess_Image = pygame.image.load("resource\\white_Chess.png")
+black_Chess_Image = pygame.image.load("resource\\black_Chess.png")
+
 class Board:
     def __init__(self):
         self.Boardsize = 9
+        self.Board_x_move = 20
+        self.Board_y_move = 10
 
-        self.XtoXstart = 220
-        self.YtoXstart = 150
-        self.XtoYstart = 180
-        self.YtoYstart = 180
+        self.XtoXstart = 220 +self.Board_x_move
+        self.YtoXstart = 150 +self.Board_y_move
+        self.XtoYstart = 180 +self.Board_x_move
+        self.YtoYstart = 180 +self.Board_y_move
 
-        self.Rowlenth = 440
-        self.Collenth = 420
-        self.Distance = 45
+        self.Rowlenth = 490
+        self.Collenth = 470
+        self.Distance = 50
         self.Line_color = 0x838383
 
         self.CheckRidus = 10
@@ -23,8 +28,8 @@ class Board:
         self.Magic_plants = []
         self.Magic_plant_Color = "green"
 
-        self.LeftUP_Point = (461,210)
-        self.RightDown_Point = (821,571)
+        self.LeftUP_Point = (461 -self.Board_x_move, 210 -self.Board_y_move)
+        self.RightDown_Point = (821 -self.Board_x_move, 571 -self.Board_y_move)
 
         self.PlayerHead_Pos = (150,70)
         self.EnemyHead_Pos = (1100,70)
@@ -43,7 +48,7 @@ class Board:
         yfirstLine_start = origin-pygame.Vector2(self.XtoYstart,self.YtoYstart)#纵向绘制起点
         xlineLenth = pygame.Vector2(self.Rowlenth,0)
         ylineLenth = pygame.Vector2(0,self.Collenth)
-        
+
         for i in range(self.Boardsize):#横向棋盘线
             cur_start = xfirstLine_start+pygame.Vector2(0,self.Distance*i)
             pygame.draw.line(screen,self.Line_color,cur_start,cur_start+xlineLenth,4)
@@ -58,7 +63,7 @@ class Board:
         screen.blit(player_image,self.PlayerHead_Pos)
         screen.blit(enemy_image,self.EnemyHead_Pos)
         # 玩家1血量条（头像下方）
-        bar_width = 200
+        bar_width = 100
         bar_height = 20
         avatar_size = 50
         player1_x, player1_y = self.PlayerHead_Pos
@@ -130,12 +135,12 @@ class Board:
     def drawPiece(self,screen):
         '''绘制棋盘上的所有棋子'''
         for i in self.All_Piece:
-            pygame.draw.circle(screen,i[1],i[0],self.PieceRidus)
-    
+            screen.blit(i[1],i[0])
+
     def drawMagicPlants(self,screen):
         '''绘制棋盘上的所有魔法植物'''
         for i in self.Magic_plants:
-            pygame.draw.rect(screen, self.Magic_plant_Color , 
+            pygame.draw.rect(screen, self.Magic_plant_Color ,
                              [i[0]-5, i[1]-5, 5*2, 5*2])
 
     def pixel_to_board_index(self, pixel_pos):
@@ -155,12 +160,12 @@ class Board:
         for row in range(self.Boardsize):
             for col in range(self.Boardsize):
                 if pieces[row][col] == 1:
-                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance,
-                                           self.LeftUP_Point[1] + row * self.Distance], "black"])
+                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                           self.LeftUP_Point[1] + row * self.Distance - 20], black_Chess_Image])
                 elif pieces[row][col] == -1:
-                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance,
-                                           self.LeftUP_Point[1] + row * self.Distance], "white"])
-                
+                    self.All_Piece.append([[self.LeftUP_Point[0] + col * self.Distance - 20,
+                                           self.LeftUP_Point[1] + row * self.Distance - 20], white_Chess_Image])
+
                 if magic_plants[row][col] == 1:
                     self.Magic_plants.append([self.LeftUP_Point[0] + col * self.Distance,
                                               self.LeftUP_Point[1] + row * self.Distance])

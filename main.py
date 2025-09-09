@@ -1,9 +1,8 @@
 import pygame
-import random
-from board import Board
-from title_page import drawTitlePage, drawWelcome
-from game_core import FourAscendGame
-
+from board import *
+from title_page import *
+from menu_page import *
+from game_core import *
 #-------------------------------------------Initialize-----------------------------------------------
 TITLE=0;MENU=1;PVP=2;PVE=3;TEACH=4
 
@@ -15,11 +14,6 @@ running = True
 background_image = pygame.image.load('resource\\background.png')
 titleBackground_image = pygame.image.load('resource\\titleBackground.png')
 
-
-# 游戏状态初始化
-state=TITLE
-TITLE_FLAG=True;WEL_FLAG=True
-
 board = Board()
 game = FourAscendGame()
 game_state = game.getInitBoard()
@@ -28,7 +22,13 @@ player = 1
 lock = 0
 
 
-# 主循环
+
+state=TITLE
+TITLE_FLAG=True;WEL_FLAG=True
+MENU_FLAG=True
+
+
+
 while running:
     for event in pygame.event.get():
         if event.type==pygame.QUIT:
@@ -36,7 +36,6 @@ while running:
 
     match state:
         case 0:
-            # 标题页和欢迎页
             if TITLE_FLAG:
                 TITLE_FLAG=drawTitlePage(screen)
             WEL_FLAG=drawWelcome(screen,titleBackground_image,WEL_FLAG)
@@ -44,6 +43,19 @@ while running:
                 if event.type==pygame.MOUSEBUTTONDOWN:
                     state = MENU
         case 1:
+            if MENU_FLAG:
+                MENU_FLAG = MenuAnimation(screen,background_image)
+            drawMenuPage(screen,background_image)
+            x1=0;y1=0
+            if event.type == pygame.MOUSEMOTION:
+                x1,y1=event.pos
+            mouseJudge(screen,x1,y1)
+            pygame.display.flip()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x1,y1=event.pos
+                state = gameJudge(x1,y1)
+
+        case 2:
             # 游戏主界面
             screen.fill(0xffffff)
             screen.blit(background_image, (0, 0))
@@ -63,12 +75,12 @@ while running:
                 if 0 <= action < len(valid_moves) and valid_moves[action]:
                     game_state, player = game.getNextState(game_state, player, action)
                     board.syncFromPieces(game_state[0], game_state[1])
-                #鼠标上锁    
+                #鼠标上锁
                 lock = 1
             # 鼠标松开后解锁
             if not pressed[0]:
                 lock = 0
-            # 绘制棋子和魔法植物    
+            # 绘制棋子和魔法植物
             board.drawPiece(screen)
             board.drawMagicPlants(screen)
 
@@ -76,9 +88,9 @@ while running:
             if result is not None:
                 print("Game Over:", result)
                 running = False
-            
-                
+
             pygame.display.flip()
+
     clock.tick(60)
 
 pygame.quit()
