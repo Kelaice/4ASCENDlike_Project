@@ -1,8 +1,10 @@
 import numpy as np
 import random
 
+
 # 4ASCEND核心游戏逻辑类
 class FourAscendGame:
+
     def __init__(self, board_size: int = 9, hp1: int = 6, hp2: int = 6):
         """
         初始化游戏参数
@@ -10,14 +12,17 @@ class FourAscendGame:
         hp1, hp2: 双方初始血量
         """
         self.board_size = board_size
+        self.max_hp1 = hp1
+        self.max_hp2 = hp2
         self.hp1 = hp1
         self.hp2 = hp2
         self.plant_timer = 0
         self.grid_count = board_size * board_size
-        
-        self.DP1 = 0;self.connect1 = False
-        self.DP2 = 0;self.connect2 = False
 
+        self.DP1 = 0
+        self.connect1 = False
+        self.DP2 = 0
+        self.connect2 = False
 
     def getInitBoard(self):
         """
@@ -25,8 +30,10 @@ class FourAscendGame:
         返回: (棋子矩阵, 魔法植物矩阵, 升华状态矩阵, 玩家1血量, 玩家2血量, 植物计时器)
         """
         pieces = np.zeros((self.board_size, self.board_size), dtype=np.int8)
-        magic_plants = np.zeros((self.board_size, self.board_size), dtype=np.int8)
-        ascend_state = np.zeros((self.board_size, self.board_size), dtype=np.bool_)
+        magic_plants = np.zeros((self.board_size, self.board_size),
+                                dtype=np.int8)
+        ascend_state = np.zeros((self.board_size, self.board_size),
+                                dtype=np.bool_)
         return (
             pieces,
             magic_plants,
@@ -84,7 +91,8 @@ class FourAscendGame:
                 set_ascend_value=False,
             )
             ascend_state[row][col] = False
-            attack_power = np.sum(ascend_state) + np.sum(magic_plants[ascend_state])
+            attack_power = np.sum(ascend_state) + np.sum(
+                magic_plants[ascend_state])
             damage = abs(attack_power - defense_power)
 
             # 结算血量
@@ -118,11 +126,6 @@ class FourAscendGame:
                 player,
                 set_ascend_value=True,
             )
-            # if player == 1:
-            #     self.DP1=tempDP
-            # else:
-            #     self.DP2=tempDP
-
 
         self.plant_timer += 1
         if self.plant_timer > 6:
@@ -130,7 +133,48 @@ class FourAscendGame:
             self.plant_timer = 0
 
         # 返回最新棋盘状态和血量
-        return (pieces, magic_plants, ascend_state, hp1, hp2, plant_timer), -player
+        return (pieces, magic_plants, ascend_state, hp1, hp2,
+                plant_timer), -player
+
+    def getDefenseAnimationData(self, board, player, action):
+        """
+        获取防御阶段动画所需的数据，不修改游戏状态
+        返回: (攻击威力, 防御威力, 攻击方玩家)
+        """
+        pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
+        pieces_copy = pieces.copy()
+        magic_plants_copy = magic_plants.copy()
+        ascend_state_copy = ascend_state.copy()
+
+        row, col = action // self.board_size, action % self.board_size
+        pieces_copy[row][col] = player
+
+        # 计算攻击威力（当前ascend状态，但排除被防御方覆盖的位置）
+        attacking_player = -player  # 攻击方是另一个玩家
+        
+        # 如果防御方落子位置有ascend棋子，需要排除它
+        adjusted_ascend_state = ascend_state.copy()
+        adjusted_magic_plants = magic_plants.copy()
+        
+        if ascend_state[row][col]:
+            # 防御方覆盖了攻击方的ascend棋子，这个棋子不参与攻击威力计算
+            adjusted_ascend_state[row][col] = False
+            # 相应的魔法植物加成也不算
+            
+        attack_power = np.sum(adjusted_ascend_state) + np.sum(adjusted_magic_plants[adjusted_ascend_state])
+
+        # 计算防御威力
+        defense_power, defense_connected = self.ascend(
+            pieces_copy,
+            magic_plants_copy,
+            ascend_state_copy,
+            row,
+            col,
+            player,
+            set_ascend_value=False,
+        )
+
+        return attack_power, defense_power, attacking_player
 
     def getGameEnded(self, board, player):
         """
@@ -144,7 +188,7 @@ class FourAscendGame:
         if hp1 <= 0 and hp2 <= 0:
             return 0  # 平局
         elif hp1 <= 0:
-            return -1 # 玩家2胜
+            return -1  # 玩家2胜
         elif hp2 <= 0:
             return 1  # 玩家1胜
         if not np.any(pieces == 0):
@@ -164,7 +208,9 @@ class FourAscendGame:
         """
         empty_indices = np.where((pieces == 0) & (magic_plants < 2))
         if len(empty_indices[0]) >= count:
-            selected_idx = np.random.choice(len(empty_indices[0]), count, replace=False)
+            selected_idx = np.random.choice(len(empty_indices[0]),
+                                            count,
+                                            replace=False)
             for idx in selected_idx:
                 i, j = empty_indices[0][idx], empty_indices[1][idx]
                 magic_plants[i, j] += 1
@@ -179,10 +225,6 @@ class FourAscendGame:
         player,
         set_ascend_value,
     ):
-        """
-        判断并处理连线升华逻辑，返回连线总威力和是否成功连线
-        set_ascend_value: True表示升华，False表示防御
-        """
         total_power = 0
         successful_connection = False
         directions = np.array([(0, 1), (1, 0), (1, 1), (1, -1)], dtype=np.int8)
@@ -190,20 +232,14 @@ class FourAscendGame:
         for dx, dy in directions:
             connected_pos = []
             r, c = row + dx, col + dy
-            while (
-                0 <= r < self.board_size
-                and 0 <= c < self.board_size
-                and pieces[r, c] == player
-            ):
+            while (0 <= r < self.board_size and 0 <= c < self.board_size
+                   and pieces[r, c] == player):
                 connected_pos.append((r, c))
                 r, c = r + dx, c + dy
 
             r, c = row - dx, col - dy
-            while (
-                0 <= r < self.board_size
-                and 0 <= c < self.board_size
-                and pieces[r, c] == player
-            ):
+            while (0 <= r < self.board_size and 0 <= c < self.board_size
+                   and pieces[r, c] == player):
                 connected_pos.append((r, c))
                 r, c = r - dx, c - dy
 
@@ -229,8 +265,10 @@ class FourAscendGame:
 
         return total_power, successful_connection
 
+
 # 随机AI玩家
 class RandomFourAscendPlayer:
+
     def __init__(self, game):
         """初始化随机AI玩家"""
         self.game = game
@@ -243,12 +281,15 @@ class RandomFourAscendPlayer:
         valid_actions = [i for i in range(len(valid)) if valid[i]]
         return np.random.choice(valid_actions) if valid_actions else 0
 
+
 # 傻子AI玩家（带简单策略）
 class StupidFourAscendPlayer:
+
     def __init__(self, game):
         """初始化傻子AI玩家"""
         self.game = game
-        self.directions = np.array([(0, 1), (1, 0), (1, 1), (1, -1)], dtype=np.int8)
+        self.directions = np.array([(0, 1), (1, 0), (1, 1), (1, -1)],
+                                   dtype=np.int8)
 
     def play(self, board):
         """
@@ -272,7 +313,8 @@ class StupidFourAscendPlayer:
         pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
         best_action = valid_actions[0]
         best_score = float("-inf")
-        original_opponent_power = np.sum(ascend_state) + np.sum(magic_plants[ascend_state])
+        original_opponent_power = np.sum(ascend_state) + np.sum(
+            magic_plants[ascend_state])
         for action in valid_actions:
             row, col = action // self.game.board_size, action % self.game.board_size
             test_pieces = pieces.copy()
@@ -281,7 +323,8 @@ class StupidFourAscendPlayer:
             can_remove_opponent_piece = ascend_state[row, col] == 1
             if can_remove_opponent_piece:
                 test_ascend_state[row, col] = False
-                reduced_opponent_power = np.sum(test_ascend_state) + np.sum(magic_plants[test_ascend_state])
+                reduced_opponent_power = np.sum(test_ascend_state) + np.sum(
+                    magic_plants[test_ascend_state])
             else:
                 reduced_opponent_power = original_opponent_power
             test_pieces[row][col] = -1
@@ -313,8 +356,7 @@ class StupidFourAscendPlayer:
                 score += defense_power - final_opponent_power
             if not defense_connected and not can_remove_opponent_piece:
                 position_score = self._evaluate_position(
-                    pieces, magic_plants, row, col, -1
-                )
+                    pieces, magic_plants, row, col, -1)
                 score += position_score * 0.1
             score += magic_plants[row, col] * 2
             if score > best_score:
@@ -327,27 +369,31 @@ class StupidFourAscendPlayer:
         攻击阶段：优先阻止对方连4、尝试连4、连3
         """
         pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
-        block_move = self._find_blocking_move(pieces, magic_plants, 1, valid_actions)
+        block_move = self._find_blocking_move(pieces, magic_plants, 1,
+                                              valid_actions)
         if block_move is not None:
             return block_move
         if not self._opponent_can_win_next_turn(pieces, magic_plants, 1):
-            win_move = self._find_winning_move(pieces, magic_plants, -1, valid_actions)
+            win_move = self._find_winning_move(pieces, magic_plants, -1,
+                                               valid_actions)
             if win_move is not None:
                 return win_move
-        three_move = self._find_three_connection_move(
-            pieces, magic_plants, -1, valid_actions
-        )
+        three_move = self._find_three_connection_move(pieces, magic_plants, -1,
+                                                      valid_actions)
         if three_move is not None:
             return three_move
-        return self._choose_best_position(pieces, magic_plants, -1, valid_actions)
+        return self._choose_best_position(pieces, magic_plants, -1,
+                                          valid_actions)
 
-    def _find_blocking_move(self, pieces, magic_plants, opponent_player, valid_actions):
+    def _find_blocking_move(self, pieces, magic_plants, opponent_player,
+                            valid_actions):
         """
         寻找阻止对方连成4子的位置
         """
         for action in valid_actions:
             row, col = action // self.game.board_size, action % self.game.board_size
-            if self._can_form_four(pieces, magic_plants, row, col, opponent_player):
+            if self._can_form_four(pieces, magic_plants, row, col,
+                                   opponent_player):
                 return action
         return None
 
@@ -361,7 +407,8 @@ class StupidFourAscendPlayer:
                 return action
         return None
 
-    def _find_three_connection_move(self, pieces, magic_plants, player, valid_actions):
+    def _find_three_connection_move(self, pieces, magic_plants, player,
+                                    valid_actions):
         """
         寻找能连成3子的位置
         """
@@ -387,16 +434,16 @@ class StupidFourAscendPlayer:
                 best_action = action
         return best_action
 
-    def _opponent_can_win_next_turn(self, pieces, magic_plants, opponent_player):
+    def _opponent_can_win_next_turn(self, pieces, magic_plants,
+                                    opponent_player):
         """
         检查对方下一轮是否能连成4子
         """
         for row in range(self.game.board_size):
             for col in range(self.game.board_size):
                 if pieces[row][col] == 0:
-                    if self._can_form_four(
-                        pieces, magic_plants, row, col, opponent_player
-                    ):
+                    if self._can_form_four(pieces, magic_plants, row, col,
+                                           opponent_player):
                         return True
         return False
 
@@ -409,26 +456,23 @@ class StupidFourAscendPlayer:
         for dx, dy in self.directions:
             count = 1
             r, c = row + dx, col + dy
-            while (
-                0 <= r < self.game.board_size
-                and 0 <= c < self.game.board_size
-                and test_pieces[r, c] == player
-            ):
+            while (0 <= r < self.game.board_size
+                   and 0 <= c < self.game.board_size
+                   and test_pieces[r, c] == player):
                 count += 1
                 r, c = r + dx, c + dy
             r, c = row - dx, col - dy
-            while (
-                0 <= r < self.game.board_size
-                and 0 <= c < self.game.board_size
-                and test_pieces[r, c] == player
-            ):
+            while (0 <= r < self.game.board_size
+                   and 0 <= c < self.game.board_size
+                   and test_pieces[r, c] == player):
                 count += 1
                 r, c = r - dx, c - dy
             if count >= 4:
                 return True
         return False
 
-    def _choose_best_position(self, pieces, magic_plants, player, valid_actions):
+    def _choose_best_position(self, pieces, magic_plants, player,
+                              valid_actions):
         """
         选择最佳位置（启发式评估）
         """
@@ -436,7 +480,8 @@ class StupidFourAscendPlayer:
         best_score = float("-inf")
         for action in valid_actions:
             row, col = action // self.game.board_size, action % self.game.board_size
-            score = self._evaluate_position(pieces, magic_plants, row, col, player)
+            score = self._evaluate_position(pieces, magic_plants, row, col,
+                                            player)
             if score > best_score:
                 best_score = score
                 best_action = action
