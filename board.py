@@ -500,11 +500,11 @@ class Board:
 
                     screen.blit(temp_surface, (pos_x, pos_y))
 
-    def drawEndBoard(self,screen,result,state):
+    def drawEndBoard(self,screen,result,state,game_state):
         screen.blit(Game_End_Image,(0,0))
         f = pygame.font.Font("resource\\pixelfont.ttf", 60)
         font = pygame.font.Font("resource\\pixelfont.ttf", 40)
-        events = pygame.event.get()
+        P_font = pygame.font.Font("resource\\pixelfont.ttf", 100)
 
         if state == 3:
             Win_Font = f.render("W I N !",True,(50,50,50))
@@ -512,31 +512,44 @@ class Board:
         else:
             Win_Font = f.render("P 1 W I N !",True,(50,50,50))
             Lose_Font = f.render("P 2 W I N !",True,(50,50,50))
-        ReStart_Font = font.render("ReStrat",True,(255,255,255))
+        ReStart_Font = font.render("Press Menu to ReChoose Game",True,(250,250,250))
+        P1_font = P_font.render(f"{game_state[3]}",True,(255,0,0))
+        P2_font = P_font.render(f"{game_state[4]}",True,(0,0,255))
+        PK_font = P_font.render(":",True,(0,0,0))
 
         Win_Rect = Win_Font.get_rect()
         Lose_Rect = Lose_Font.get_rect()
         ReStart_Rect =ReStart_Font.get_rect()
+        P1_Rect = P1_font.get_rect()
+        P2_Rect = P2_font.get_rect()
+        PK_Rect = PK_font.get_rect()
+
 
         Win_Rect.center = (640,200)
         Lose_Rect.center = (640,200)
         ReStart_Rect.center = (640,500)
+        P1_Rect.center = (340,350)
+        P2_Rect.center = (940,350)
+        PK_Rect.center = (640,350)
 
         if result == 1:
             screen.blit(Win_Font,Win_Rect)
         elif result == -1:
-            screen.bilt(Lose_Font,Lose_Rect)
+            screen.blit(Lose_Font,Lose_Rect)
         button_rect=(ReStart_Rect[0]-10,ReStart_Rect[1]-10,ReStart_Rect[2]+20,ReStart_Rect[3]+20)
 
+        screen.blit(P1_font,P1_Rect)
+        screen.blit(P2_font,P2_Rect)
+        screen.blit(PK_font,PK_Rect)
         mousepos = pygame.mouse.get_pos()
 
         if button_rect[0] <= mousepos[0] <= button_rect[0] + button_rect[2] and button_rect[1] <= mousepos[1] <= button_rect[1] + button_rect[3]:
-            pygame.draw.rect(screen,0xdcdcdc,button_rect,0)
-            pygame.draw.rect(screen,0x000000,button_rect,2)
+            # pygame.draw.rect(screen,0xdcdcdc,button_rect,0)
+            # pygame.draw.rect(screen,0x000000,button_rect,2)
             screen.blit(ReStart_Font,ReStart_Rect)
         else:
-            pygame.draw.rect(screen,0x838383,button_rect,0)
-            pygame.draw.rect(screen,0x000000,button_rect,2)
+            # pygame.draw.rect(screen,0x838383,button_rect,0)
+            # pygame.draw.rect(screen,0x000000,button_rect,2)
             screen.blit(ReStart_Font,ReStart_Rect)
 
         return False
