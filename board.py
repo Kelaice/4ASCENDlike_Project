@@ -512,7 +512,7 @@ class Board:
         else:
             Win_Font = f.render("P 1 W I N !",True,(50,50,50))
             Lose_Font = f.render("P 2 W I N !",True,(50,50,50))
-        ReStart_Font = font.render("ReStrate",True,(255,255,255))
+        ReStart_Font = font.render("ReStrat",True,(255,255,255))
 
         Win_Rect = Win_Font.get_rect()
         Lose_Rect = Lose_Font.get_rect()

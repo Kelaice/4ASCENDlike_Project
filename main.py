@@ -219,7 +219,7 @@ while running:
             result = game.getGameEnded(game_state, player)
             if result is not None:
                if (board.drawEndBoard(screen,result,state)):
-                    pass
+                    board.set_game_reference(FourAscendGame())
 
             pygame.display.flip()
 
@@ -389,7 +389,7 @@ while running:
             result = game.getGameEnded(game_state, player)
             if result is not None:
                 if (board.drawEndBoard(screen,result,state)):
-                    pass
+                    board.set_game_reference(FourAscendGame())
                 # print("Game Over:", result)
                 # running = False
 
