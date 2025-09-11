@@ -151,16 +151,16 @@ class FourAscendGame:
 
         # 计算攻击威力（当前ascend状态，但排除被防御方覆盖的位置）
         attacking_player = -player  # 攻击方是另一个玩家
-        
+
         # 如果防御方落子位置有ascend棋子，需要排除它
         adjusted_ascend_state = ascend_state.copy()
         adjusted_magic_plants = magic_plants.copy()
-        
+
         if ascend_state[row][col]:
             # 防御方覆盖了攻击方的ascend棋子，这个棋子不参与攻击威力计算
             adjusted_ascend_state[row][col] = False
             # 相应的魔法植物加成也不算
-            
+
         attack_power = np.sum(adjusted_ascend_state) + np.sum(adjusted_magic_plants[adjusted_ascend_state])
 
         # 计算防御威力

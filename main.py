@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import threading
 from board import *
 from title_page import *
 from menu_page import *
@@ -12,6 +13,13 @@ PVE = 3
 TEACH = 4
 
 pygame.init()
+pygame.mixer.init()
+pygame.mixer.music.load("resource\\background_music.mp3")
+
+class MyThread(threading.Thread):
+    def run(self):
+        pygame.mixer.music.play(-1)
+
 screen = pygame.display.set_mode((1280, 720))
 clock = pygame.time.Clock()
 running = True
@@ -32,6 +40,11 @@ battle_animation_started = False
 pending_game_state = None
 pending_player = None
 
+
+thread = MyThread()
+thread.start()
+thread.run()
+
 state = TITLE
 
 click_cooldown = 0
@@ -49,6 +62,7 @@ while running:
     for event in events:
         if event.type == pygame.QUIT:
             running = False
+
 
     match state:
         case 0:  # TITLE
@@ -99,7 +113,7 @@ while running:
             ):
                 if pending_game_state is not None and pending_player is not None:
                     game_state = pending_game_state
-                    player = -pending_player
+                    player = pending_player
                     board.syncFromPieces(game_state)  # 动画结束后同步棋盘状态
                     pending_game_state = None
                     pending_player = None
@@ -172,9 +186,14 @@ while running:
 
                                     # 开始战斗动画
                                     attacking_player = -player  # 攻击方是另一个玩家
+
+                                    #player=-player
+
                                     board.start_battle_animation(
                                         game_state, action, attacking_player,
                                         player)
+
+
                                 else:
                                     # 正常落子，没有战斗动画
                                     board.add_place_animation(row, col, player)
@@ -185,7 +204,7 @@ while running:
                                 click_cooldown = CLICK_COOLDOWN_TIME
                             #鼠标上锁
                             lock = 1
-                        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                             # 鼠标松开后解锁
                             lock = 0
 
@@ -199,8 +218,8 @@ while running:
 
             result = game.getGameEnded(game_state, player)
             if result is not None:
-                print("Game Over:", result)
-                running = False
+               if (board.drawEndBoard(screen,result,state)):
+                    pass
 
             pygame.display.flip()
 
@@ -221,7 +240,7 @@ while running:
             ):
                 if pending_game_state is not None and pending_player is not None:
                     game_state = pending_game_state
-                    player = -pending_player
+                    player = pending_player
                     board.syncFromPieces(game_state)  # 动画结束后同步棋盘状态
                     pending_game_state = None
                     pending_player = None
@@ -299,6 +318,9 @@ while running:
 
                                         # 开始战斗动画
                                         attacking_player = -player  # 攻击方是另一个玩家
+
+
+
                                         board.start_battle_animation(
                                             game_state, action,
                                             attacking_player, player)
@@ -366,8 +388,10 @@ while running:
 
             result = game.getGameEnded(game_state, player)
             if result is not None:
-                print("Game Over:", result)
-                running = False
+                if (board.drawEndBoard(screen,result,state)):
+                    pass
+                # print("Game Over:", result)
+                # running = False
 
             pygame.display.flip()
 
@@ -669,7 +693,7 @@ while running:
                                             (0, 0, 0), (255, 255, 255))
                 screen.blit(text1, (250, 150))
                 screen.blit(text2, (250, 200))
-
+                game.hp1=6;game.hp2=6
             # 处理事件
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:

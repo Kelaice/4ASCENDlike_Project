@@ -8,7 +8,7 @@ black_Chess_Image = pygame.image.load("resource\\black_Chess.png")
 white_Chess_Plant_Image = pygame.image.load("resource\\white_Chess_Plant.png")
 black_Chess_Plant_Image = pygame.image.load("resource\\black_Chess_Plant.png")
 HP_Image = pygame.image.load("resource\\HP_Image.png")
-
+Game_End_Image = pygame.image.load("resource\\Game_End_Image.png")
 
 class Board:
 
@@ -73,6 +73,7 @@ class Board:
         self.battle_animation = BattleAnimation(self)
         self.battle_animation_active = False
         self.game = None
+
 
     def set_game_reference(self, game):
         self.game = game
@@ -498,3 +499,44 @@ class Board:
                         1] + row * self.Distance - new_size[1] // 2
 
                     screen.blit(temp_surface, (pos_x, pos_y))
+
+    def drawEndBoard(self,screen,result,state):
+        screen.blit(Game_End_Image,(0,0))
+        f = pygame.font.Font("resource\\pixelfont.ttf", 60)
+        font = pygame.font.Font("resource\\pixelfont.ttf", 40)
+        events = pygame.event.get()
+
+        if state == 3:
+            Win_Font = f.render("W I N !",True,(50,50,50))
+            Lose_Font = f.render("L O S E !",True,(50,50,50))
+        else:
+            Win_Font = f.render("P 1 W I N !",True,(50,50,50))
+            Lose_Font = f.render("P 2 W I N !",True,(50,50,50))
+        ReStart_Font = font.render("ReStrate",True,(255,255,255))
+
+        Win_Rect = Win_Font.get_rect()
+        Lose_Rect = Lose_Font.get_rect()
+        ReStart_Rect =ReStart_Font.get_rect()
+
+        Win_Rect.center = (640,200)
+        Lose_Rect.center = (640,200)
+        ReStart_Rect.center = (640,500)
+
+        if result == 1:
+            screen.blit(Win_Font,Win_Rect)
+        elif result == -1:
+            screen.bilt(Lose_Font,Lose_Rect)
+        button_rect=(ReStart_Rect[0]-10,ReStart_Rect[1]-10,ReStart_Rect[2]+20,ReStart_Rect[3]+20)
+
+        mousepos = pygame.mouse.get_pos()
+
+        if button_rect[0] <= mousepos[0] <= button_rect[0] + button_rect[2] and button_rect[1] <= mousepos[1] <= button_rect[1] + button_rect[3]:
+            pygame.draw.rect(screen,0xdcdcdc,button_rect,0)
+            pygame.draw.rect(screen,0x000000,button_rect,2)
+            screen.blit(ReStart_Font,ReStart_Rect)
+        else:
+            pygame.draw.rect(screen,0x838383,button_rect,0)
+            pygame.draw.rect(screen,0x000000,button_rect,2)
+            screen.blit(ReStart_Font,ReStart_Rect)
+
+        return False
