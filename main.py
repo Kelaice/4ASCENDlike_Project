@@ -154,6 +154,8 @@ while running:
                             state = new_state
                             click_cooldown = CLICK_COOLDOWN_TIME
                             lock = 0  # 重置锁状态
+                            if state == PVE:
+                                reset_game(9, 4, 8, random.choice([1, -1]))
 
                 pygame.display.flip()
 
@@ -178,35 +180,19 @@ while running:
                     board.syncFromPieces(game_state)  # 动画结束后同步棋盘状态
                     pending_game_state = None
                     pending_player = None
+                    # 补充魔法植物
+                    if np.sum(magic_plants) < 8:
+                        game.spawn_magic_plants(game_state[0], game_state[1], 2)
                 battle_animation_started = False
                 lock = 0
             elif battle_animation_started:
                 # 显示下一步的棋盘状态（但不包括魔法植物生成）
                 if pending_game_state is not None:
-                    # 临时创建一个不包含最新魔法植物的状态用于显示
-                    pieces, _, ascend_state, _, _, _ = pending_game_state
-                    # 从当前状态获取魔法植物信息，确保动画期间不显示新生成的魔法植物
-                    _, magic_plants, _, _, _, _ = game_state
-                    # 创建用于显示的临时状态
-                    display_state = (
-                        pieces,
-                        magic_plants,
-                        ascend_state,
-                        game.hp1,
-                        game.hp2,
-                        0,
-                    )
-                    # 临时同步棋盘显示
-                    temp_all_piece = board.All_Piece.copy()
-                    temp_magic_plants = board.Magic_plants.copy()
-                    board.syncFromPieces(display_state)
+                    board.syncFromPieces(pending_game_state)
                     # 绘制棋盘和棋子，但不显示下子指示
                     board.drawBoard(screen)
                     board.drawPiece(screen)
                     board.drawMagicPlants(screen)
-                    # 恢复原始状态
-                    board.All_Piece = temp_all_piece
-                    board.Magic_plants = temp_magic_plants
                 # 更新和绘制战斗动画
                 board.update_battle_animation(delta_time)
                 board.draw_battle_animation(screen)
@@ -236,7 +222,7 @@ while running:
 
                             pixel_pos = board.findPos()
                             row, col = board.pixel_to_board_index(pixel_pos)
-                            action = row * board.Boardsize + col
+                            action = row * board.game.board_size + col
                             valid_moves = game.getValidMoves(game_state, player)
 
                             if 0 <= action < len(valid_moves) and valid_moves[action]:
@@ -286,8 +272,22 @@ while running:
             if result is not None:
                 if board.end_time is None:
                     board.set_game_end()
-                total_time = (pygame.time.get_ticks() - board.start_time) / 1000 if board.start_time else 0
-                if board.drawEndBoard(screen, result, state, game.hp1, game.hp2, game.max_hp1, game.max_hp2, total_time):
+                total_time = (
+                    (board.end_time - board.start_time) / 1000
+                    if board.start_time
+                    else 0
+                )
+                if board.drawEndBoard(
+                    screen,
+                    result,
+                    state,
+                    game.hp1,
+                    game.hp2,
+                    game.max_hp1,
+                    game.max_hp2,
+                    total_time,
+                    events,
+                ):
                     reset_game()
 
             pygame.display.flip()
@@ -313,35 +313,19 @@ while running:
                     board.syncFromPieces(game_state)  # 动画结束后同步棋盘状态
                     pending_game_state = None
                     pending_player = None
+                    # 补充魔法植物
+                    if np.sum(magic_plants) < 8:
+                        game.spawn_magic_plants(game_state[0], game_state[1], 2)
                 battle_animation_started = False
                 lock = 0
             elif battle_animation_started:
                 # 显示下一步的棋盘状态（但不包括魔法植物生成）
                 if pending_game_state is not None:
-                    # 临时创建一个不包含最新魔法植物的状态用于显示
-                    pieces, _, ascend_state, _, _, _ = pending_game_state
-                    # 从当前状态获取魔法植物信息，确保动画期间不显示新生成的魔法植物
-                    _, magic_plants, _, _, _, _ = game_state
-                    # 创建用于显示的临时状态
-                    display_state = (
-                        pieces,
-                        magic_plants,
-                        ascend_state,
-                        game.hp1,
-                        game.hp2,
-                        0,
-                    )
-                    # 临时同步棋盘显示
-                    temp_all_piece = board.All_Piece.copy()
-                    temp_magic_plants = board.Magic_plants.copy()
-                    board.syncFromPieces(display_state)
+                    board.syncFromPieces(pending_game_state)
                     # 绘制棋盘和棋子，但不显示下子指示
                     board.drawBoard(screen)
                     board.drawPiece(screen)
                     board.drawMagicPlants(screen)
-                    # 恢复原始状态
-                    board.All_Piece = temp_all_piece
-                    board.Magic_plants = temp_magic_plants
                 # 更新和绘制战斗动画
                 board.update_battle_animation(delta_time)
                 board.draw_battle_animation(screen)
@@ -365,7 +349,7 @@ while running:
                             elif valid and not lock and click_cooldown <= 0:
                                 pixel_pos = board.findPos()
                                 row, col = board.pixel_to_board_index(pixel_pos)
-                                action = row * board.Boardsize + col
+                                action = row * board.game.board_size + col
                                 valid_moves = game.getValidMoves(game_state, player)
 
                                 if (
@@ -414,7 +398,10 @@ while running:
                             globals()["ai_player"] = StupidFourAscendPlayer(game)
 
                         action = ai_player.play(game_state)
-                        row, col = action // board.Boardsize, action % board.Boardsize
+                        row, col = (
+                            action // board.game.board_size,
+                            action % board.game.board_size,
+                        )
 
                         is_defense_turn = np.any(ascend_state == 1)
 
@@ -457,8 +444,25 @@ while running:
 
             result = game.getGameEnded(game_state, player)
             if result is not None:
-                if board.drawEndBoard(screen, result, state):
-                    reset_game()
+                if board.end_time is None:
+                    board.set_game_end()
+                total_time = (
+                    (board.end_time - board.start_time) / 1000
+                    if board.start_time
+                    else 0
+                )
+                if board.drawEndBoard(
+                    screen,
+                    result if player == -1 else -result,
+                    state,
+                    game.hp1,
+                    game.hp2,
+                    game.max_hp1,
+                    game.max_hp2,
+                    total_time,
+                    events,
+                ):
+                    reset_game(9, 4, 8)
 
             pygame.display.flip()
 
@@ -513,10 +517,14 @@ while running:
                     # 根据当前步骤触发相应的动画
                     if step == 2:
                         # 攻击动画
-                        board.start_battle_animation(teaching_state, 4 * 9 + 4, 1, 2)
+                        board.start_battle_animation(
+                            teaching_state, 4 * board.game.board_size + 4, 1, 2
+                        )
                     elif step == 3:
                         # 防御动画
-                        board.start_battle_animation(teaching_state, 4 * 9 + 5, -1, 1)
+                        board.start_battle_animation(
+                            teaching_state, 4 * board.game.board_size + 5, -1, 1
+                        )
             elif teaching_anim_playing:
                 teaching_anim_timer += delta_time
                 # 检查动画是否完成

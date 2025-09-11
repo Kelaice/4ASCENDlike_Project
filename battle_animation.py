@@ -24,8 +24,9 @@ class BattleAnimation:
         self.current_collision_pair = None
 
         # 物理常量
-        self.COLLISION_RADIUS = 20
+        self.COLLISION_RADIUS = 24
         self.ATTRACTION_STRENGTH = 200
+        self.REPULSION_STRENGTH = 100
 
         # 跟踪已碰撞的棋子对
         self.collided_pairs = set()
@@ -37,8 +38,9 @@ class BattleAnimation:
         self.attacking_player = 0
 
         # 添加飞出阶段计时器
-        self.flying_timer = 0
-        self.FLYING_DURATION = 800
+        self.timer = 0
+        self.FLYING_DURATION = 300
+        self.ATTACKING_DURATION = 100
 
         # 碰撞动画列表
         self.collision_animations = []
@@ -56,7 +58,7 @@ class BattleAnimation:
         self.attacking_player = attacking_player
 
         # 重置飞出阶段计时器
-        self.flying_timer = 0
+        self.timer = 0
 
         # 重置碰撞动画列表
         self.collision_animations = []
@@ -87,7 +89,7 @@ class BattleAnimation:
                     angle = (random.random() - 0.5) / 3 * math.pi + (
                         math.pi if attacking_player == 1 else 0
                     )
-                    speed = 20 + random.random() * 5
+                    speed = 10 + random.random() * 5
                     vx = math.cos(angle) * speed
                     vy = -math.sin(angle) * speed
 
@@ -146,7 +148,7 @@ class BattleAnimation:
                             angle = (random.random() - 0.5) / 3 * math.pi + (
                                 math.pi if attacking_player != 1 else 0
                             )
-                            speed = 20 + random.random() * 5
+                            speed = 10 + random.random() * 5
                             vx = math.cos(angle) * speed
                             vy = -math.sin(angle) * speed  # 向上飞
 
@@ -186,7 +188,32 @@ class BattleAnimation:
 
     def _update_flying_out(self, delta_time):
         """更新棋子飞出阶段"""
-        self.flying_timer += delta_time
+        self.timer += delta_time
+
+        # 计算斥力
+        all_pieces = self.attacking_pieces + self.defending_pieces
+        for piece in all_pieces:
+            if not piece["alive"]:
+                continue
+            piece["ax"] = 0
+            piece["ay"] = 0
+
+        for i in range(len(all_pieces)):
+            for j in range(i + 1, len(all_pieces)):
+                piece1 = all_pieces[i]
+                piece2 = all_pieces[j]
+                if not piece1["alive"] or not piece2["alive"]:
+                    continue
+                dx = piece2["x"] - piece1["x"]
+                dy = piece2["y"] - piece1["y"]
+                dist = math.sqrt(dx**2 + dy**2) + 1
+                force = self.REPULSION_STRENGTH / (dist**2)
+                fx = force * dx / dist
+                fy = force * dy / dist
+                piece1["ax"] -= fx
+                piece1["ay"] -= fy
+                piece2["ax"] += fx
+                piece2["ay"] += fy
 
         # 更新棋子位置和速度
         for pieces_list in [self.attacking_pieces, self.defending_pieces]:
@@ -194,12 +221,17 @@ class BattleAnimation:
                 if not piece["alive"]:
                     continue
 
+                # 应用斥力加速度
+                piece["vx"] += piece["ax"]
+                piece["vy"] += piece["ay"]
+
                 piece["vx"] *= 0.9
                 piece["vy"] *= 0.9
                 piece["x"] += piece["vx"]
                 piece["y"] += piece["vy"]
 
-        if self.flying_timer >= self.FLYING_DURATION:
+        if self.timer >= self.FLYING_DURATION:
+            self.timer = 0
             self.phase = "COLLIDING"
             self._select_next_collision_pair()
 
@@ -208,9 +240,12 @@ class BattleAnimation:
         # 如果没有活跃的碰撞对，尝试选择新的
         if self.current_collision_pair is None:
             if not self._select_next_collision_pair():
+                self.timer += delta_time
                 # 没有更多可碰撞的棋子对，进入攻击阶段
-                self.phase = "ATTACKING"
-                self._prepare_attacks()
+                if self.timer >= self.ATTACKING_DURATION:
+                    self.timer = 0
+                    self.phase = "ATTACKING"
+                    self._prepare_attacks()
                 return
         else:
             # 更新当前碰撞对的物理状态
@@ -300,16 +335,18 @@ class BattleAnimation:
 
                 # 如果距离大于0，计算方向向量
                 if distance > 0:
-                    dir_x = dx / (10 + distance**2)
-                    dir_y = dy / (10 + distance**2)
+                    dir_x = dx / distance**2
+                    dir_y = dy / distance**2
                 else:
                     dir_x, dir_y = 0, 0
 
-                acceleration = 500 + (i * 300)
+                acceleration = 800 + (i * 400)
                 piece["ax"] = dir_x * acceleration
                 piece["ay"] = dir_y * acceleration
 
                 # 更新速度和位置
+                piece["vx"] *= 0.9
+                piece["vy"] *= 0.9
                 piece["vx"] += piece["ax"]
                 piece["vy"] += piece["ay"]
                 piece["x"] += piece["vx"]
@@ -440,13 +477,13 @@ class BattleAnimation:
             if self.target_player == 1:
                 # 攻击玩家1，减少玩家1的HP
                 if hasattr(self.board.game, "hp1"):
-                    self.board.game.hp1 = max(0, self.board.game.hp1 - damage)
+                    self.board.game.hp1 = self.board.game.hp1 - damage
                 # 触发受伤动画
                 self.board.trigger_hurt_animation(1)
             else:
                 # 攻击玩家2，减少玩家2的HP
                 if hasattr(self.board.game, "hp2"):
-                    self.board.game.hp2 = max(0, self.board.game.hp2 - damage)
+                    self.board.game.hp2 = self.board.game.hp2 - damage
                 # 触发受伤动画
                 self.board.trigger_hurt_animation(2)
 

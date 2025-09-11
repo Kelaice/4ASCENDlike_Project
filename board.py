@@ -2,6 +2,7 @@
 import pygame
 import math
 from battle_animation import BattleAnimation
+from game_core import FourAscendGame
 
 white_Chess_Image = pygame.image.load("resource\\white_Chess.png")
 black_Chess_Image = pygame.image.load("resource\\black_Chess.png")
@@ -13,7 +14,6 @@ Game_End_Image = pygame.image.load("resource\\Game_End_Image.png")
 
 class Board:
     def __init__(self):
-        self.Boardsize = 9
         self.Board_x_move = 20
         self.Board_y_move = 10
 
@@ -66,7 +66,7 @@ class Board:
         self.last_hp1 = None
         self.last_hp2 = None
 
-        self.menu_button_rect = pygame.Rect(20, 620, 120, 50)
+        self.menu_button_rect = pygame.Rect(20, 660, 120, 50)
         self.menu_button_hovered = False
 
         self.battle_animation = BattleAnimation(self)
@@ -77,8 +77,9 @@ class Board:
         self.end_time = None
         self.end_animation_scale = 0
         self.start_time = None
+        self.restart_hovered = False
 
-    def set_game_reference(self, game):
+    def set_game_reference(self, game: FourAscendGame):
         self.game = game
 
     def start_battle_animation(
@@ -274,12 +275,12 @@ class Board:
         xlineLenth = pygame.Vector2(self.Rowlenth, 0)
         ylineLenth = pygame.Vector2(0, self.Collenth)
 
-        for i in range(self.Boardsize):  # 横向棋盘线
+        for i in range(self.game.board_size):  # 横向棋盘线
             cur_start = xfirstLine_start + pygame.Vector2(0, self.Distance * i)
             pygame.draw.line(
                 screen, self.Line_color, cur_start, cur_start + xlineLenth, 4
             )
-        for i in range(self.Boardsize):  # 纵向棋盘线
+        for i in range(self.game.board_size):  # 纵向棋盘线
             cur_start = yfirstLine_start + pygame.Vector2(self.Distance * i, 0)
             pygame.draw.line(
                 screen, self.Line_color, cur_start, cur_start + ylineLenth, 4
@@ -469,8 +470,8 @@ class Board:
         self.magic_plants = magic_plants
         self.ascend_state = ascend_state
 
-        for row in range(self.Boardsize):
-            for col in range(self.Boardsize):
+        for row in range(self.game.board_size):
+            for col in range(self.game.board_size):
                 if pieces[row][col] == 1:
                     if magic_plants[row][col] == 1:
                         self.All_Piece.append(
@@ -530,8 +531,8 @@ class Board:
         # 更新动画时间
         self.animation_time += 1
 
-        for row in range(self.Boardsize):
-            for col in range(self.Boardsize):
+        for row in range(self.game.board_size):
+            for col in range(self.game.board_size):
                 if self.ascend_state[row][col]:
                     # 根据攻击方决定棋子颜色
                     if attacking_player == 1:
@@ -569,7 +570,16 @@ class Board:
                     screen.blit(temp_surface, (pos_x, pos_y))
 
     def drawEndBoard(
-        self, screen, result, state, hp1, hp2, initial_hp1, initial_hp2, total_time
+        self,
+        screen,
+        result,
+        state,
+        hp1,
+        hp2,
+        initial_hp1,
+        initial_hp2,
+        total_time,
+        events,
     ):
         if self.end_time is None:
             return False
@@ -581,8 +591,8 @@ class Board:
         # 更新动画缩放
         self.end_animation_scale = min(1.0, self.end_animation_scale + 0.05)
 
-        # 创建临时 Surface 来绘制所有内容
-        temp_surface = pygame.Surface((1280, 720))  # 假设屏幕大小
+        # 创建临时 Surface 来绘制所有内容，支持透明度
+        temp_surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
         temp_surface.blit(Game_End_Image, (0, 0))
 
         f = pygame.font.Font("resource\\pixelfont.ttf", 60)
@@ -624,33 +634,22 @@ class Board:
         temp_surface.blit(hp2_text, hp2_rect)
 
         # 绘制总用时
-        # time_text = small_font.render(
-        #     f"Total Time: {total_time:.1f} seconds", True, (255, 255, 255)
-        # )
-        # time_rect = time_text.get_rect(center=(640, 350))
-        # temp_surface.blit(time_text, time_rect)
+        time_text = small_font.render(
+            f"Total Time: {total_time:.1f} seconds", True, (255, 255, 255)
+        )
+        time_rect = time_text.get_rect(center=(640, 350))
+        temp_surface.blit(time_text, time_rect)
 
         # 绘制重启按钮
-        ReStart_Font = font.render("ReStart", True, (255, 255, 255))
-        ReStart_Rect = ReStart_Font.get_rect(center=(640, 500))
-        button_rect = (
-            ReStart_Rect[0] - 10,
-            ReStart_Rect[1] - 10,
-            ReStart_Rect[2] + 20,
-            ReStart_Rect[3] + 20,
-        )
 
-        mousepos = pygame.mouse.get_pos()
-        if (
-            button_rect[0] <= mousepos[0] <= button_rect[0] + button_rect[2]
-            and button_rect[1] <= mousepos[1] <= button_rect[1] + button_rect[3]
-        ):
-            pygame.draw.rect(temp_surface, 0xDCDCDC, button_rect, 0)
-            pygame.draw.rect(temp_surface, 0x000000, button_rect, 2)
+        if self.restart_hovered:
+            button_color = (100, 100, 100)
         else:
-            pygame.draw.rect(temp_surface, 0x838383, button_rect, 0)
-            pygame.draw.rect(temp_surface, 0x000000, button_rect, 2)
-        temp_surface.blit(ReStart_Font, ReStart_Rect)
+            button_color = (30, 30, 30)
+
+        RESTART = font.render("RESTART", True, button_color)
+        RESTART_rect = RESTART.get_rect(center=(640, 600))
+        temp_surface.blit(RESTART, RESTART_rect)
 
         # 缩放并绘制到屏幕
         if self.end_animation_scale < 1.0:
@@ -666,16 +665,27 @@ class Board:
             screen.blit(temp_surface, (0, 0))
 
         # 检查鼠标点击事件
-        events = pygame.event.get()
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if (
-                    button_rect[0] <= event.pos[0] <= button_rect[0] + button_rect[2]
-                    and button_rect[1]
-                    <= event.pos[1]
-                    <= button_rect[1] + button_rect[3]
-                ):
-                    return True
+                if self.end_animation_scale < 1.0:
+                    # 计算缩放后的按钮区域
+                    scale = self.end_animation_scale
+                    scaled_button_rect = (
+                        int(RESTART_rect[0] * scale) + (1280 - int(1280 * scale)) // 2,
+                        int(RESTART_rect[1] * scale) + (720 - int(720 * scale)) // 2,
+                        int(RESTART_rect[2] * scale),
+                        int(RESTART_rect[3] * scale),
+                    )
+
+                    if pygame.Rect(scaled_button_rect).collidepoint(event.pos):
+                        return True
+                else:
+                    # 正常大小的按钮检测
+                    if RESTART_rect.collidepoint(event.pos):
+                        return True
+            elif event.type == pygame.MOUSEMOTION:
+                # 检查鼠标是否悬停在按钮上
+                self.restart_hovered = RESTART_rect.collidepoint(event.pos)
 
         return False
 
