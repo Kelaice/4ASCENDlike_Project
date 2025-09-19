@@ -1,6 +1,7 @@
 import numpy as np
 import random
 
+
 # 4ASCEND核心游戏逻辑类
 class FourAscendGame:
     def __init__(self, board_size: int = 9, hp1: int = 6, hp2: int = 6):
@@ -10,10 +11,17 @@ class FourAscendGame:
         hp1, hp2: 双方初始血量
         """
         self.board_size = board_size
+        self.max_hp1 = hp1
+        self.max_hp2 = hp2
         self.hp1 = hp1
         self.hp2 = hp2
         self.plant_timer = 0
         self.grid_count = board_size * board_size
+
+        self.DP1 = 0
+        self.connect1 = False
+        self.DP2 = 0
+        self.connect2 = False
 
     def getInitBoard(self):
         """
@@ -99,10 +107,6 @@ class FourAscendGame:
             hp2 = max(0, hp2)
             magic_plants[ascend_state == 1] = 0
             ascend_state.fill(0)
-
-            # 补充魔法植物
-            if np.sum(magic_plants) < 8:
-                self.spawn_magic_plants(pieces, magic_plants, 2)
         else:
             # 攻击阶段
             self.ascend(
@@ -123,6 +127,48 @@ class FourAscendGame:
         # 返回最新棋盘状态和血量
         return (pieces, magic_plants, ascend_state, hp1, hp2, plant_timer), -player
 
+    def getDefenseAnimationData(self, board, player, action):
+        """
+        获取防御阶段动画所需的数据，不修改游戏状态
+        返回: (攻击威力, 防御威力, 攻击方玩家)
+        """
+        pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
+        pieces_copy = pieces.copy()
+        magic_plants_copy = magic_plants.copy()
+        ascend_state_copy = ascend_state.copy()
+
+        row, col = action // self.board_size, action % self.board_size
+        pieces_copy[row][col] = player
+
+        # 计算攻击威力（当前ascend状态，但排除被防御方覆盖的位置）
+        attacking_player = -player  # 攻击方是另一个玩家
+
+        # 如果防御方落子位置有ascend棋子，需要排除它
+        adjusted_ascend_state = ascend_state.copy()
+        adjusted_magic_plants = magic_plants.copy()
+
+        if ascend_state[row][col]:
+            # 防御方覆盖了攻击方的ascend棋子，这个棋子不参与攻击威力计算
+            adjusted_ascend_state[row][col] = False
+            # 相应的魔法植物加成也不算
+
+        attack_power = np.sum(adjusted_ascend_state) + np.sum(
+            adjusted_magic_plants[adjusted_ascend_state]
+        )
+
+        # 计算防御威力
+        defense_power, defense_connected = self.ascend(
+            pieces_copy,
+            magic_plants_copy,
+            ascend_state_copy,
+            row,
+            col,
+            player,
+            set_ascend_value=False,
+        )
+
+        return attack_power, defense_power, attacking_player
+
     def getGameEnded(self, board, player):
         """
         判断游戏是否结束，返回胜负结果
@@ -135,7 +181,7 @@ class FourAscendGame:
         if hp1 <= 0 and hp2 <= 0:
             return 0  # 平局
         elif hp1 <= 0:
-            return -1 # 玩家2胜
+            return -1  # 玩家2胜
         elif hp2 <= 0:
             return 1  # 玩家1胜
         if not np.any(pieces == 0):
@@ -170,10 +216,6 @@ class FourAscendGame:
         player,
         set_ascend_value,
     ):
-        """
-        判断并处理连线升华逻辑，返回连线总威力和是否成功连线
-        set_ascend_value: True表示升华，False表示防御
-        """
         total_power = 0
         successful_connection = False
         directions = np.array([(0, 1), (1, 0), (1, 1), (1, -1)], dtype=np.int8)
@@ -220,19 +262,6 @@ class FourAscendGame:
 
         return total_power, successful_connection
 
-# 随机AI玩家
-class RandomFourAscendPlayer:
-    def __init__(self, game):
-        """初始化随机AI玩家"""
-        self.game = game
-
-    def play(self, board):
-        """
-        随机选择一个合法落子位置
-        """
-        valid = self.game.getValidMoves(board, -1)
-        valid_actions = [i for i in range(len(valid)) if valid[i]]
-        return np.random.choice(valid_actions) if valid_actions else 0
 
 # 傻子AI玩家（带简单策略）
 class StupidFourAscendPlayer:
@@ -256,33 +285,37 @@ class StupidFourAscendPlayer:
         else:
             return self._choose_attack_move(board, valid_actions)
 
-    def _choose_defense_move(self, board, valid_actions):
+    def _choose_defense_move(self, board, valid_actions, player=-1):
         """
-        防御阶段：选择最优防御位置
+        防御阶段：选择使自己伤害最小化、对方伤害最大化的位置
         """
         pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
-        best_action = valid_actions[0]
-        best_score = float("-inf")
-        original_opponent_power = np.sum(ascend_state) + np.sum(magic_plants[ascend_state])
+        opponent_player = -player
+        original_opponent_power = np.sum(ascend_state) + np.sum(
+            magic_plants[ascend_state]
+        )
+        candidates = []
         for action in valid_actions:
             row, col = action // self.game.board_size, action % self.game.board_size
             test_pieces = pieces.copy()
             test_magic_plants = magic_plants.copy()
             test_ascend_state = ascend_state.copy()
-            can_remove_opponent_piece = ascend_state[row, col] == 1
+            can_remove_opponent_piece = ascend_state[row, col] == opponent_player
             if can_remove_opponent_piece:
                 test_ascend_state[row, col] = False
-                reduced_opponent_power = np.sum(test_ascend_state) + np.sum(magic_plants[test_ascend_state])
+                reduced_opponent_power = np.sum(test_ascend_state) + np.sum(
+                    magic_plants[test_ascend_state]
+                )
             else:
                 reduced_opponent_power = original_opponent_power
-            test_pieces[row][col] = -1
+            test_pieces[row][col] = player
             defense_power, defense_connected = self.game.ascend(
                 test_pieces,
                 test_magic_plants,
                 test_ascend_state,
                 row,
                 col,
-                -1,
+                player,
                 set_ascend_value=False,
             )
             final_opponent_power = reduced_opponent_power
@@ -296,40 +329,43 @@ class StupidFourAscendPlayer:
             else:
                 my_damage = 0
                 opponent_damage = 0
-            score = opponent_damage - my_damage
-            if can_remove_opponent_piece:
-                removed_power = 1 + magic_plants[row, col]
-                score += removed_power * 5
-            if defense_power > final_opponent_power:
-                score += defense_power - final_opponent_power
-            if not defense_connected and not can_remove_opponent_piece:
-                position_score = self._evaluate_position(
-                    pieces, magic_plants, row, col, -1
-                )
-                score += position_score * 0.1
-            score += magic_plants[row, col] * 2
-            if score > best_score:
-                best_score = score
-                best_action = action
+            candidates.append((action, my_damage, opponent_damage))
+        if not candidates:
+            return valid_actions[0]
+        # 找到最小 my_damage
+        min_my_damage = min(c[1] for c in candidates)
+        # 在最小 my_damage 中，选最大 opponent_damage
+        best_candidates = [c for c in candidates if c[1] == min_my_damage]
+        best_action = max(best_candidates, key=lambda c: c[2])[0]
         return best_action
 
     def _choose_attack_move(self, board, valid_actions):
         """
-        攻击阶段：优先阻止对方连4、尝试连4、连3
+        攻击阶段：优先阻止对方高伤害位置，但检查安全；否则延长自己连线
         """
         pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
-        block_move = self._find_blocking_move(pieces, magic_plants, 1, valid_actions)
-        if block_move is not None:
-            return block_move
-        if not self._opponent_can_win_next_turn(pieces, magic_plants, 1):
-            win_move = self._find_winning_move(pieces, magic_plants, -1, valid_actions)
-            if win_move is not None:
-                return win_move
+        # 尝试阻止高伤害位置
+        max_damage = 0
+        best_action = None
+        for action in valid_actions:
+            damage = self._calculate_potential_damage(board, action, 1)
+            if damage > max_damage:
+                max_damage = damage
+                best_action = action
+        if best_action is not None and max_damage > 0:
+            if self._is_safe_to_attack(board, best_action):
+                return best_action
+        # 尝试连3
         three_move = self._find_three_connection_move(
             pieces, magic_plants, -1, valid_actions
         )
         if three_move is not None:
             return three_move
+        # 尝试赢
+        win_move = self._find_winning_move(pieces, magic_plants, -1, valid_actions)
+        if win_move is not None:
+            return win_move
+        # 最佳位置
         return self._choose_best_position(pieces, magic_plants, -1, valid_actions)
 
     def _find_blocking_move(self, pieces, magic_plants, opponent_player, valid_actions):
@@ -377,19 +413,6 @@ class StupidFourAscendPlayer:
                 best_power = power
                 best_action = action
         return best_action
-
-    def _opponent_can_win_next_turn(self, pieces, magic_plants, opponent_player):
-        """
-        检查对方下一轮是否能连成4子
-        """
-        for row in range(self.game.board_size):
-            for col in range(self.game.board_size):
-                if pieces[row][col] == 0:
-                    if self._can_form_four(
-                        pieces, magic_plants, row, col, opponent_player
-                    ):
-                        return True
-        return False
 
     def _can_form_four(self, pieces, magic_plants, row, col, player):
         """
@@ -476,3 +499,73 @@ class StupidFourAscendPlayer:
                 score += 3
             score += empty_spaces
         return score
+
+    def _calculate_potential_damage(self, board, action, opponent_player):
+        """
+        计算对方下子后的潜在攻击威力
+        """
+        pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
+        row, col = action // self.game.board_size, action % self.game.board_size
+        test_pieces = pieces.copy()
+        test_magic_plants = magic_plants.copy()
+        test_ascend_state = ascend_state.copy()
+        test_pieces[row][col] = opponent_player
+        attack_power, _ = self.game.ascend(
+            test_pieces,
+            test_magic_plants,
+            test_ascend_state,
+            row,
+            col,
+            opponent_player,
+            set_ascend_value=True,
+        )
+        return attack_power
+
+    def _is_safe_to_attack(self, board, action):
+        """
+        检查下子后是否会导致自己受到伤害
+        """
+        pieces, magic_plants, ascend_state, hp1, hp2, plant_timer = board
+        row, col = action // self.game.board_size, action % self.game.board_size
+        test_pieces = pieces.copy()
+        test_magic_plants = magic_plants.copy()
+        test_ascend_state = ascend_state.copy()
+        test_pieces[row][col] = -1  # 自己是 -1
+        attack_power, _ = self.game.ascend(
+            test_pieces,
+            test_magic_plants,
+            test_ascend_state,
+            row,
+            col,
+            -1,
+            set_ascend_value=True,
+        )
+        if attack_power == 0:
+            return True  # 没有触发，不会有伤害
+        # 触发了，模拟对手防御
+        opponent_ai = StupidFourAscendPlayer(self.game)
+        valid = self.game.getValidMoves((test_pieces, test_magic_plants, test_ascend_state, hp1, hp2, plant_timer), 1)
+        valid_actions = [i for i in range(len(valid)) if valid[i]]
+        if not valid_actions:
+            return True
+        defense_action = opponent_ai._choose_defense_move((test_pieces, test_magic_plants, test_ascend_state, hp1, hp2, plant_timer), valid_actions, 1)
+        # 模拟对手下子
+        d_row, d_col = defense_action // self.game.board_size, defense_action % self.game.board_size
+        test_pieces2 = test_pieces.copy()
+        test_magic_plants2 = magic_plants.copy()
+        test_ascend_state2 = test_ascend_state.copy()
+        test_pieces2[d_row][d_col] = 1
+        defense_power, _ = self.game.ascend(
+            test_pieces2,
+            test_magic_plants2,
+            test_ascend_state2,
+            d_row,
+            d_col,
+            1,
+            set_ascend_value=False,
+        )
+        # 计算伤害
+        if attack_power > defense_power:
+            return False  # 自己受到伤害
+        else:
+            return True
